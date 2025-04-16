@@ -11,12 +11,11 @@ class TableInfo(BaseModel):
     @field_validator('joins')
     @classmethod
     def _validate_joins_format(cls, joins):
-        
         if not joins:
             return joins
         
         for condition in joins:
-            pattern = r'^[\w]+\.[\w]+s*=\s*[\w]+\.[\w]+$'
+            pattern = r'^[\w]+\.[\w]+\s*=\s*[\w]+\.[\w]+$'
             if not isinstance(condition,str) or not re.match(pattern,condition):
                 raise ValueError(
                     f'Invalid join condition format: "{condition}". Expected format: "table.column = table.column"'
@@ -28,7 +27,7 @@ class TableInfo(BaseModel):
     def _empty_table(cls,table_name):
         if table_name.strip() == "":
             raise ValueError("Empty table name in table_info")
-        
+        return table_name
     
     
 class Column(BaseModel):
@@ -53,10 +52,10 @@ class GeneratedSchema(BaseModel):
     
     @model_validator(mode="after")
     def _check_unique_column_id(self):
-        columns = self.columns
+        columns = list(self.columns.keys())
         # columns = values.get("columns",{})
         column_ids = set()
-        for column_id, column in columns.items():
+        for column_id in columns:
             if column_id not in column_ids:
                 column_ids.add(column_id)
             else:

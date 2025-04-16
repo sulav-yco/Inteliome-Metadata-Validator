@@ -10,7 +10,7 @@ movies:
       column: name
       desc: Title of the movie
       fetch: true
-    name:
+    rating:
       name: content rating
       type: varchar
       column: rating
@@ -31,13 +31,13 @@ movies:
     released_date:
       name: release date
       type: date
-      column: release_date
+      column: released_date
       desc: release date of a movie
       fetch: true
     released_country:
       name: release country
       type: varchar
-      column: release_country
+      column: released_country
       desc: Country where the movie was released
       fetch: false
     country:
