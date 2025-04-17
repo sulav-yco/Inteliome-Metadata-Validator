@@ -1,102 +1,94 @@
-import re
-from pydantic import BaseModel, field_validator, model_validator
-from typing import List, Dict, Optional, Generic, TypeVar, Type            
-    
+import yaml
+from typing import List, Dict
+from pyvalidator.format_validator import SchemaWrapper, GeneratedSchema, TableInfo, Column
+from simple_ddl_parser import DDLParser
+from pprint import pprint
 
-class TableInfo(BaseModel):
-    table: str
-    joins: List[str]
+
+
+def parse_ddl_to_metadata(ddl:str):
+    return DDLParser(ddl).run(output_mode="hql")
+
+
+
+class SchemaValidator():
+    
+    TYPE_EQUIVALENTS = {
+                "NUMBER": {"DECIMAL", "FLOAT", "NUMBER", "DOUBLE", "NUMERIC"},
+                "INT": {"INT", "INTEGER", "BIGINT", "SMALLINT"},
+                "VARCHAR": {"VARCHAR", "TEXT", "STRING", "CHAR"},
+                "DATE": {"DATE", "DATETIME", "TIMESTAMP"}
+            }
     
     
-    @field_validator('joins')
-    @classmethod
-    def _validate_joins_format(cls, joins):
-        if not joins:
-            return joins
+    def __init__(self, ddls = None):
+        self.ddl = parse_ddl_to_metadata(ddls)
         
-        for condition in joins:
-            pattern = r'^[\w]+\.[\w]+\s*=\s*[\w]+\.[\w]+$'
-            if not isinstance(condition,str) or not re.match(pattern,condition):
-                raise ValueError(
-                    f'Invalid join condition format: "{condition}". Expected format: "table.column = table.column"'
-                )
-        return joins
     
-    @field_validator('table')
-    @classmethod
-    def _empty_table(cls,table_name):
-        if table_name.strip() == "":
-            raise ValueError("Empty table name in table_info")
-        return table_name
-    
-    
-class Column(BaseModel):
-    name: str
-    type: str
-    column: str
-    desc: str
-    primary_key: Optional[bool] = None
-    foreign_key: Optional[bool] = None
-    table : Optional[str] = None
-    fetch: Optional[bool] = None
-    
-
-class GeneratedSchema(BaseModel):
-    subject_area: str
-    table_info: List[TableInfo]
-    columns: Dict[str, Column]
-    
-    
-    # tables_in_schema = {table.table for table in table_info}
-    
-    
-    @model_validator(mode="after")
-    def _check_unique_column_id(self):
-        columns = list(self.columns.keys())
-        # columns = values.get("columns",{})
-        column_ids = set()
-        for column_id in columns:
-            if column_id not in column_ids:
-                column_ids.add(column_id)
-            else:
-                raise ValueError("Columns ids not unique")
-        return self   
-    
-    @model_validator( mode="after")
-    def _check_column_name_format(self):
-        columns = self.columns
-        # columns = values.get("columns",{})
-        pattern = r'[a-zA-Z_][a-zA-Z0-9_]*$'
-        for column_id, column in columns.items():
-            if not re.match(pattern, column_id):
-                raise ValueError(f"Column name: {column_id} not matching with the column name format")  
-        return self
+    def print_ddl(self):
+        pprint(self.ddl)
         
-    @model_validator(mode="after")
-    def _validate_table_reference(self):
-        tables_set = set()
-        tables = self.table_info
-        for table in tables:
-            tables_set.add(table.table)
         
-        columns = self.columns
-        for column_id, column in columns.items():
-            if column.table != None:
-                if type(column.table) == str:
-                    reference = column.table
-                    if reference not in tables_set:
-                        raise ValueError(f"{column['table']} reference missing")
-                elif type(column.table) == list:
-                    for reference in column['table']:
-                        if reference not in tables_set:
-                            raise ValueError(f"{column['table']} reference missing")
-        return self 
-    
-
-GeneratedSchemaType = TypeVar('GeneratedSchemaType', bound=GeneratedSchema)
-
-class SchemaWrapper(BaseModel, Generic[GeneratedSchemaType]):
-    root: Dict[str, GeneratedSchemaType]
-
+    def types_are_equivalent(self,ddl_type: str, schema_type: str) -> bool:
+        ddl_type = ddl_type.upper()
+        schema_type = schema_type.upper()
+        for equivalents in self.TYPE_EQUIVALENTS.values():
+            if ddl_type in equivalents and schema_type in equivalents:
+                return True
+        return ddl_type == schema_type  # fallback: exact match
     
     
+    
+           
+    def validate_schema(self, generated_schema: Dict):
+        
+        
+        schema_key = list(generated_schema.keys())[0]
+        
+        schema = generated_schema[schema_key]
+        # print(schema)
+        
+        
+        schema = GeneratedSchema(**schema)
+        schema_table_name = schema.table_info[0].table
+
+        
+        if schema_table_name != self.ddl[0]["table_name"]:
+            raise ValueError(f"{schema.table_info[0].table} table name not in DDL")
+        
+        schema_columns = {col.column: col for col in schema.columns.values()} 
+
+        ddl_primary_keys = self.ddl[0]["primary_key"]  # checking primary keys too
+        # Step 3: Validate DDL columns against schema
+        for ddl_col in self.ddl[0]['columns']:
+            ddl_col_name = ddl_col['name']
+            ddl_col_type = ddl_col['type'].upper()
+
+            if ddl_col_name not in list(schema_columns.keys()):
+                raise ValueError(f"DDL column '{ddl_col_name}' not found in schema.")
+
+            schema_col_type = schema_columns[ddl_col_name].type.upper()
+            if not self.types_are_equivalent(ddl_col_type, schema_col_type):
+                raise ValueError(f"Type mismatch for column '{ddl_col_name}': DDL type '{ddl_col_type}', Schema type '{schema_col_type}'.")
+            
+            
+            if ddl_col_name in ddl_primary_keys:
+                if not schema.columns[ddl_col_name].primary_key:
+                    raise ValueError(f"{ddl_col_name} not stated as primary key in Schema")
+                
+            elif schema.columns[ddl_col_name].primary_key:
+                raise ValueError(f"{ddl_col_name} stated as primary key in Schema which isn't a primary key")
+            
+            if schema_columns[ddl_col_name].fetch:
+                if schema_columns[ddl_col_name].type.upper() == "NUMBER":
+                    raise ValueError(f"Invalid Fetch value for {schema_columns[ddl_col_name]}. Column type is number ")
+            
+
+        print("Schema successfully validated against DDL.")
+                
+                
+        
+
+
+
+
