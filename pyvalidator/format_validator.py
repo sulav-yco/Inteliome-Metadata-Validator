@@ -1,5 +1,5 @@
 import re
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator, model_validator, Field
 from typing import List, Dict, Optional, Generic, TypeVar, Type            
 import sys
 import yaml    
@@ -35,7 +35,7 @@ class Column(BaseModel):
     name: str
     type: str
     column: str
-    desc: str
+    desc: str = Field(max_length=255)
     primary_key: Optional[bool] = None
     foreign_key: Optional[bool] = None
     table : Optional[str] = None
@@ -117,17 +117,18 @@ class SourceColumns(BaseModel):
 class Attributes(BaseModel):
     name: str
     synonym: Optional[List[str]] = None 
-    description: str
+    description: str = Field(max_length=255)
     include: Optional[List[str]] = None  
     output_consideration: Optional[str] = None 
     relevant_attributes: Optional[List[str]] = None 
+    filter: List[str] = None
 
 
 
 class Metrics(BaseModel):
     name: str
     synonym: Optional[List[str]] = None
-    description: Optional[str] = None
+    description: Optional[str] = Field(default = None, max_length=255)
     calculation: Optional[str] = None
     granularity: Optional[List[str]] = None
     include: Optional[List[str]] = None
@@ -148,21 +149,3 @@ class GeneratedSemantics(BaseModel):
 GeneratedSemanticsType = TypeVar("GeneratedScemanticsType", bound= GeneratedSemantics)
 class SemanticWrapper(BaseModel, Generic[GeneratedSemanticsType]):
     root: Dict[str, GeneratedSemanticsType]
-
-
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python format_validator.py <path_to_yaml_file>")
-        sys.exit(1)
-
-    path = sys.argv[1]
-
-    with open(path, 'r') as f:
-        data = yaml.safe_load(f)
-
-    try:
-        SchemaWrapper[GeneratedSchema](root=data)
-        print("Format validation passed.")
-    except Exception as e:
-        print(f"Format validation failed: {e}")
-        sys.exit(1)

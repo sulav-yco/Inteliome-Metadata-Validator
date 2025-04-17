@@ -10,7 +10,7 @@ movies:
       column: name
       desc: Title of the movie
       fetch: true
-    rating:
+    name:
       name: content rating
       type: varchar
       column: rating

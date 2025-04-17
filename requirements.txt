@@ -27,6 +27,8 @@ Pygments==2.19.1
 python-dateutil==2.9.0.post0
 PyYAML==6.0.2
 pyzmq==26.4.0
+ruamel.yaml==0.18.10
+ruamel.yaml.clib==0.2.12
 simple-ddl-parser==1.7.1
 six==1.17.0
 stack-data==0.6.3

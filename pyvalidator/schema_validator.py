@@ -1,6 +1,6 @@
 import yaml
 from typing import List, Dict
-from format_validator import SchemaWrapper, GeneratedSchema, TableInfo, Column
+from pyvalidator.format_validator import SchemaWrapper, GeneratedSchema, TableInfo, Column
 from simple_ddl_parser import DDLParser
 from pprint import pprint
 
@@ -37,6 +37,10 @@ class SchemaValidator():
                 return True
         return ddl_type == schema_type  # fallback: exact match
     
+    
+    ## Need to define valid column types
+    # def valid_column_type(self, column_type:str):
+        
     
     
            
@@ -79,9 +83,9 @@ class SchemaValidator():
             elif schema.columns[ddl_col_name].primary_key:
                 raise ValueError(f"{ddl_col_name} stated as primary key in Schema which isn't a primary key")
             
-            if schema_columns[ddl_col_name].fetch:
-                if schema_columns[ddl_col_name].type.upper() == "NUMBER":
-                    raise ValueError(f"Invalid Fetch value for {schema_columns[ddl_col_name]}. Column type is number ")
+            # if schema_columns[ddl_col_name].fetch:
+            #     if schema_columns[ddl_col_name].type.upper() == "NUMBER":
+            #         raise ValueError(f"Invalid Fetch value for {schema_columns[ddl_col_name]}. Column type is number ")
             
 
         print("Schema successfully validated against DDL.")
