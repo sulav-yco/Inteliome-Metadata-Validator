@@ -35,10 +35,9 @@ class Column(BaseModel):
     name: str
     type: str
     column: str
-    desc: str = Field(max_length=255)
+    desc: Optional[str] = Field(default = None,max_length=255)
     primary_key: Optional[bool] = None
     foreign_key: Optional[bool] = None
-    table : Optional[str] = None
     fetch: Optional[bool] = None
     
 
@@ -51,18 +50,18 @@ class GeneratedSchema(BaseModel):
     # tables_in_schema = {table.table for table in table_info}
     
     
-    @model_validator(mode="after")
-    def _check_unique_column_id(self):
-        columns = list(self.columns.keys())
-        print(columns)
-        # columns = values.get("columns",{})
-        column_ids = set()
-        for column_id in columns:
-            if column_id not in column_ids:
-                column_ids.add(column_id)
-            else:
-                raise ValueError("Columns ids not unique")
-        return self   
+    # @model_validator(mode="after")
+    # def _check_unique_column_id(self):
+    #     columns = list(self.columns.keys())
+    #     print(columns)
+    #     # columns = values.get("columns",{})
+    #     column_ids = set()
+    #     for column_id in columns:
+    #         if column_id not in column_ids:
+    #             column_ids.add(column_id)
+    #         else:
+    #             raise ValueError("Columns ids not unique")
+    #     return self   
     
     @model_validator( mode="after")
     def _check_column_name_format(self):
@@ -74,25 +73,25 @@ class GeneratedSchema(BaseModel):
                 raise ValueError(f"Column name: {column_id} not matching with the column name format")  
         return self
         
-    @model_validator(mode="after")
-    def _validate_table_reference(self):
-        tables_set = set()
-        tables = self.table_info
-        for table in tables:
-            tables_set.add(table.table)
+    # @model_validator(mode="after")
+    # def _validate_table_reference(self):
+    #     tables_set = set()
+    #     tables = self.table_info
+    #     for table in tables:
+    #         tables_set.add(table.table)
         
-        columns = self.columns
-        for column_id, column in columns.items():
-            if column.table != None:
-                if type(column.table) == str:
-                    reference = column.table
-                    if reference not in tables_set:
-                        raise ValueError(f"{column['table']} reference missing")
-                elif type(column.table) == list:
-                    for reference in column['table']:
-                        if reference not in tables_set:
-                            raise ValueError(f"{column['table']} reference missing")
-        return self 
+    #     columns = self.columns
+    #     for column_id, column in columns.items():
+    #         if column.table != None:
+    #             if type(column.table) == str:
+    #                 reference = column.table
+    #                 if reference not in tables_set:
+    #                     raise ValueError(f"{column['table']} reference missing")
+    #             elif type(column.table) == list:
+    #                 for reference in column['table']:
+    #                     if reference not in tables_set:
+    #                         raise ValueError(f"{column['table']} reference missing")
+    #     return self 
     
 
 GeneratedSchemaType = TypeVar('GeneratedSchemaType', bound=GeneratedSchema)

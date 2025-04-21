@@ -1,0 +1,131 @@
+subject_area: university enrollment
+table_info:
+  - table: departments
+    joins: []
+    columns:
+      department_id:
+        name: Department ID
+        type: int
+        column: department_id
+        desc: Unique identifier for department
+        primary_key: true
+      name:
+        name: Department Name
+        type: varchar
+        column: name
+        desc: Name of the department
+
+  - table: professors
+    joins:
+      - join: departments
+        on: departments.department_id = professors.department_id
+    columns:
+      professor_id:
+        name: Professor ID
+        type: int
+        column: professor_id
+        desc: Unique identifier for professor
+        primary_key: true
+      name:
+        name: Professor Name
+        type: varchar
+        column: name
+        desc: Full name of professor
+      department_id:
+        name: Department ID
+        type: int
+        column: department_id
+        desc: Department the professor belongs to
+        foreign_key: true
+
+  - table: students
+    joins: []
+    columns:
+      student_id:
+        name: Student ID
+        type: int
+        column: student_id
+        desc: Unique identifier for student
+        primary_key: true
+      name:
+        name: Student Name
+        type: varchar
+        column: name
+        desc: Full name of student
+      email:
+        name: Email
+        type: varchar
+        column: email
+        desc: Unique email address
+      enrollment_year:
+        name: Enrollment Year
+        type: int
+        column: enrollment_year
+        desc: Year student enrolled
+
+  - table: courses
+    joins:
+      - join: departments
+        on: departments.department_id = courses.department_id
+      - join: professors
+        on: professors.professor_id = courses.professor_id
+    columns:
+      course_id:
+        name: Course ID
+        type: int
+        column: course_id
+        desc: Unique identifier for course
+        primary_key: true
+      title:
+        name: Course Title
+        type: varchar
+        column: title
+        desc: Title of the course
+      department_id:
+        name: Department ID
+        type: int
+        column: department_id
+        desc: Department offering the course
+        foreign_key: true
+      professor_id:
+        name: Professor ID
+        type: int
+        column: professor_id
+        desc: Professor teaching the course
+        foreign_key: true
+
+  - table: enrollments
+    joins:
+      - join: students
+        on: students.student_id = enrollments.student_id
+      - join: courses
+        on: courses.course_id = enrollments.course_id
+    columns:
+      enrollment_id:
+        name: Enrollment ID
+        type: int
+        column: enrollment_id
+        desc: Unique identifier for enrollment
+        primary_key: true
+      student_id:
+        name: Student ID
+        type: int
+        column: student_id
+        desc: Student enrolled in the course
+        foreign_key: true
+      course_id:
+        name: Course ID
+        type: int
+        column: course_id
+        desc: Course enrolled into
+        foreign_key: true
+      enrollment_date:
+        name: Enrollment Date
+        type: date
+        column: enrollment_date
+        desc: Date of enrollment
+      grade:
+        name: Grade
+        type: char
+        column: grade
+        desc: Grade received in course
